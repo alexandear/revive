@@ -15,6 +15,6 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Run Revive Action
-      uses: morphy2k/revive-action@v2
+      uses: alexandear/revive-action@print-revive-args
       with:
         config: revive.toml
