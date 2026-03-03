@@ -18,6 +18,8 @@ linters:
     - modernize
     - musttag
     - nolintlint
+    - prealloc
+    - perfsprint
     - reassign
     - recvcheck
     - revive
@@ -38,6 +40,8 @@ linters:
         linters:
           - godoclint
           - godot
+          - perfsprint
+          - prealloc
       - linters:
           - testpackage
         text: 'package should be `rule_test` instead of `rule`'
@@ -74,6 +78,8 @@ linters:
       - linters:
           - gosec
         path: rule/var_declarations.go
+      - path: rule
+        text: 'string-format: fmt\.Sprintf can be replaced with string concatenation'
 
   settings:
     gocritic:
@@ -104,6 +110,9 @@ linters:
       allow-unused: false
       require-explanation: true
       require-specific: true
+    perfsprint:
+      err-error: true
+      loop-other-ops: true
     reassign:
       patterns:
         - .*

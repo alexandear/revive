@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -126,11 +127,11 @@ func (*Friendly) printStatistics(w io.Writer, header string, stats map[string]in
 		data = append(data, statEntry{name, total})
 	}
 	slices.SortFunc(data, func(a, b statEntry) int {
-		return -cmp.Compare(a.failures, b.failures)
+		return cmp.Compare(b.failures, a.failures)
 	})
 	formatted := [][]string{}
 	for _, entry := range data {
-		formatted = append(formatted, []string{color.GreenString(fmt.Sprintf("%d", entry.failures)), entry.name})
+		formatted = append(formatted, []string{color.GreenString(strconv.Itoa(entry.failures)), entry.name})
 	}
 	if _, err := fmt.Fprintln(w, header); err != nil {
 		return err

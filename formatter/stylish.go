@@ -3,6 +3,7 @@ package formatter
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/fatih/color"
 
@@ -49,6 +50,10 @@ func (*Stylish) Format(failures <-chan lint.Failure, config lint.Config) (string
 		result = append(result, formatFailure(f, currentType))
 	}
 
+	if total == 0 {
+		return "", nil
+	}
+
 	fileReport := map[string][][]string{}
 	var files []string
 
@@ -62,11 +67,11 @@ func (*Stylish) Format(failures <-chan lint.Failure, config lint.Config) (string
 	}
 	slices.Sort(files)
 
-	output := ""
+	var output strings.Builder
 	for _, filename := range files {
 		c := color.New(color.Underline)
-		output += c.SprintfFunc()(filename + "\n")
-		output += table(fileReport[filename]) + "\n"
+		output.WriteString(c.SprintfFunc()(filename + "\n"))
+		output.WriteString(table(fileReport[filename]) + "\n")
 	}
 
 	problemsLabel := "problems"
@@ -82,16 +87,15 @@ func (*Stylish) Format(failures <-chan lint.Failure, config lint.Config) (string
 	if totalErrors == 1 {
 		errorsLabel = "error"
 	}
+
 	suffix := fmt.Sprintf(" %d %s (%d %s) (%d %s)", total, problemsLabel, totalErrors, errorsLabel, totalWarnings, warningsLabel)
 
-	switch {
-	case total > 0 && totalErrors > 0:
-		suffix = color.RedString("\n ✖" + suffix)
-	case total > 0 && totalErrors == 0:
+	if totalErrors == 0 {
 		suffix = color.YellowString("\n ✖" + suffix)
-	default:
-		suffix, output = "", ""
+	} else {
+		suffix = color.RedString("\n ✖" + suffix)
 	}
+	output.WriteString(suffix)
 
-	return output + suffix, nil
+	return output.String(), nil
 }
