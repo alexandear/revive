@@ -86,8 +86,6 @@ If you disable them in the config file, revive will run over 6x faster than goli
 
 `revive` is available inside the majority of package managers.
 
-[<img alt="Repology packaging status" src="https://repology.org/badge/vertical-allrepos/revive.svg">](https://repology.org/project/revive/versions)
-
 ### Homebrew
 
 Install `revive` using [brew](https://brew.sh/):
