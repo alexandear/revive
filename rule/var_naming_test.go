@@ -187,6 +187,7 @@ func TestIsUpperCaseConst(t *testing.T) {
 		{"FO", true},
 		{"F_O", true},
 		{"FOO123", true},
+		{"Ä_", false}, // rune count differs from byte count, must not index past the rune slice
 	}
 
 	for _, tt := range tests {

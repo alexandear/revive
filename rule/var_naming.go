@@ -288,7 +288,7 @@ func isUpperCaseConst(s string) bool {
 			continue
 		case c == '_':
 			// Underscore must be followed by at least one uppercase letter or digit
-			if i+1 >= len(s) || !isUpperOrDigit(r[i+1]) {
+			if i+1 >= len(r) || !isUpperOrDigit(r[i+1]) {
 				return false
 			}
 
