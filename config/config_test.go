@@ -433,7 +433,10 @@ func TestGetConfig(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				_, err := config.GetConfig(filepath.Join("testdata", tc.confPath))
 
-				if err != nil && !strings.Contains(err.Error(), tc.wantError) {
+				if err == nil {
+					t.Fatalf("Expected error %q, got none", tc.wantError)
+				}
+				if !strings.Contains(err.Error(), tc.wantError) {
 					t.Errorf("Unexpected error: want %q, got: %q", tc.wantError, err)
 				}
 			})
@@ -644,15 +647,9 @@ func TestGetLintingRules(t *testing.T) {
 				"deep-exit",        // non-default rule
 			},
 		},
-		"enable imports-blocklist rule": {
-			confPath:       "issue-969.toml",
-			wantRulesCount: 1,
-			wantEnabledRules: []string{
-				"imports-blocklist", // non-default renamed rule
-			},
-			wantDisabledRules: []string{
-				"imports-blacklist", // non-default deprecated rule name
-			},
+		"former name of a renamed rule": {
+			confPath: "renamed-rule.toml",
+			wantErr:  `rule "imports-blacklist" was renamed to "imports-blocklist", update the configuration`,
 		},
 		"var-naming configure error": {
 			confPath: "var-naming-configure-error.toml",
@@ -847,17 +844,15 @@ func TestEnabledRules(t *testing.T) {
 		}
 	})
 
-	t.Run("resolves deprecated rule-name aliases", func(t *testing.T) {
+	t.Run("ignores unknown rule names", func(t *testing.T) {
 		cfg := &lint.Config{
 			Rules: lint.RulesConfig{
-				"imports-blacklist": {}, // deprecated alias for imports-blocklist
+				"imports-blacklist": {}, // former name of imports-blocklist
 			},
 		}
 
-		got := ruleNames(config.EnabledRules(cfg))
-		want := []string{"imports-blocklist"}
-		if !slices.Equal(got, want) {
-			t.Errorf("EnabledRules: expected %v, got %v", want, got)
+		if got := config.EnabledRules(cfg); len(got) != 0 {
+			t.Errorf("EnabledRules: expected none, got %v", ruleNames(got))
 		}
 	})
 
