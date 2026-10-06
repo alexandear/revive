@@ -698,6 +698,32 @@ func TestGetLintingRules(t *testing.T) {
 	}
 }
 
+// extraRule is an externally provided rule, as revivelib users can register.
+type extraRule struct {
+	name string
+}
+
+func (r *extraRule) Name() string { return r.name }
+
+func (*extraRule) Apply(_ *lint.File, _ lint.Arguments) []lint.Failure { return nil }
+
+func TestGetLintingRules_FormerRuleName(t *testing.T) {
+	cfg, err := config.GetConfig(filepath.Join("testdata", "renamed-rule.toml"))
+	if err != nil {
+		t.Fatalf("Unexpected error while loading conf: %v", err)
+	}
+
+	// An extra rule registered under the former name takes over it:
+	// embedders can provide their own rule to keep configurations using the former name working.
+	rules, err := config.GetLintingRules(cfg, []lint.Rule{&extraRule{name: "imports-blacklist"}})
+	if err != nil {
+		t.Fatalf("Unexpected error\n\t%v", err)
+	}
+	if want := []string{"imports-blacklist"}; !slices.Equal(ruleNames(rules), want) {
+		t.Errorf("Expected rules %v, got %v", want, ruleNames(rules))
+	}
+}
+
 func TestGetGlobalSeverity(t *testing.T) {
 	tt := map[string]struct {
 		confPath               string
