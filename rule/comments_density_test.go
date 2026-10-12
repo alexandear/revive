@@ -19,13 +19,26 @@ func TestCommentsDensityRule_Configure(t *testing.T) {
 			arguments: lint.Arguments{},
 		},
 		{
-			name:      "integer argument",
-			arguments: lint.Arguments{int64(15)},
+			name:      "int64 argument, as a TOML configuration yields it",
+			arguments: lint.Arguments{int64(10)},
 		},
 		{
-			name:      "invalid argument type",
-			arguments: lint.Arguments{"invalid"},
-			wantErr:   errors.New(`invalid argument for "comments-density" rule: argument should be an int, got string`),
+			name:      "int argument, as a YAML configuration yields it",
+			arguments: lint.Arguments{10},
+		},
+		{
+			name:      "float64 argument, as a JSON configuration yields it",
+			arguments: lint.Arguments{float64(10)},
+		},
+		{
+			name:      "non-integral float argument",
+			arguments: lint.Arguments{10.5},
+			wantErr:   errors.New(`invalid argument for "comments-density" rule: argument should be an integer, got float64`),
+		},
+		{
+			name:      "string argument",
+			arguments: lint.Arguments{"10"},
+			wantErr:   errors.New(`invalid argument for "comments-density" rule: argument should be an integer, got string`),
 		},
 	}
 

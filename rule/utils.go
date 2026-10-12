@@ -2,6 +2,7 @@ package rule
 
 import (
 	"go/token"
+	"math"
 	"regexp"
 	"strings"
 
@@ -59,4 +60,84 @@ func isDirectiveComment(line string) bool {
 // newInternalFailureError returns a slice of Failure with a single internal failure in it.
 func newInternalFailureError(e error) []lint.Failure {
 	return []lint.Failure{lint.NewInternalFailure(e.Error())}
+}
+
+// integer is the set of integer types a rule argument can hold.
+type integer interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64
+}
+
+// float is the set of floating-point types a rule argument can hold.
+type float interface {
+	~float32 | ~float64
+}
+
+// toInt converts a rule argument to an int.
+//
+// A rule cannot expect a single Go type for a numeric argument, because the type depends on
+// the decoder that produced the configuration:
+//   - a TOML decoder, the one revive itself uses, yields int64 for every integer;
+//   - a YAML decoder yields int;
+//   - a JSON decoder yields float64, as JSON has no integer type;
+//   - a tool embedding revive through revivelib can pass any numeric type it holds.
+//
+// golangci-lint, for instance, accepts its configuration in all three formats and passes the
+// decoded arguments straight to the rules. So a numeric argument is accepted whatever its Go
+// type, as long as it holds an integral value that fits in an int.
+func toInt(arg any) (int, bool) {
+	switch v := arg.(type) {
+	case int:
+		return integerToInt(v)
+	case int8:
+		return integerToInt(v)
+	case int16:
+		return integerToInt(v)
+	case int32:
+		return integerToInt(v)
+	case int64:
+		return integerToInt(v)
+	case uint:
+		return integerToInt(v)
+	case uint8:
+		return integerToInt(v)
+	case uint16:
+		return integerToInt(v)
+	case uint32:
+		return integerToInt(v)
+	case uint64:
+		return integerToInt(v)
+	case float32:
+		return floatToInt(v)
+	case float64:
+		return floatToInt(v)
+	default:
+		return 0, false
+	}
+}
+
+// integerToInt converts an integer to an int, reporting whether it is representable as such.
+func integerToInt[T integer](v T) (int, bool) {
+	i := int(v)
+
+	truncated := T(i) != v
+	signFlipped := (i < 0) != (v < 0) // an unsigned value above math.MaxInt round-trips, but changes sign
+	if truncated || signFlipped {
+		return 0, false
+	}
+
+	return i, true
+}
+
+// floatToInt converts a float holding an integral value to an int, reporting whether it is representable as such.
+func floatToInt[T float](v T) (int, bool) {
+	// math.MaxInt is not exactly representable as a float, so the upper bound is -math.MinInt,
+	// the smallest power of two above it.
+	const maxIntExclusive = -math.MinInt
+
+	f := float64(v)
+	if f != math.Trunc(f) || f < math.MinInt || f >= maxIntExclusive {
+		return 0, false
+	}
+
+	return int(f), true
 }

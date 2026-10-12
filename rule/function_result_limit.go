@@ -61,14 +61,14 @@ func (r *FunctionResultsLimitRule) Configure(arguments lint.Arguments) error {
 		return nil
 	}
 
-	maxResults, ok := arguments[0].(int64) // Alt. non panicking version
+	maxResults, ok := toInt(arguments[0])
 	if !ok {
-		return fmt.Errorf(`invalid value passed as return results number to the "function-result-limit" rule; need int64 but got %T`, arguments[0])
+		return fmt.Errorf(`invalid value passed as return results number to the "function-result-limit" rule; need an integer but got %T`, arguments[0])
 	}
 	if maxResults < 0 {
 		return errors.New(`the value passed as return results number to the "function-result-limit" rule cannot be negative`)
 	}
 
-	r.max = int(maxResults)
+	r.max = maxResults
 	return nil
 }

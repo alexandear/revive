@@ -33,23 +33,25 @@ func (r *LineLengthLimitRule) Configure(arguments lint.Arguments) error {
 		return nil
 	}
 
-	switch arg := arguments[0].(type) {
-	case int64:
-		// backward compatibility: if the first argument is an integer, it is treated as the maximum line length.
-		return r.setMax(arg)
-	case map[string]any:
-		return r.configureFromMap(arg)
-	default:
+	if options, ok := arguments[0].(map[string]any); ok {
+		return r.configureFromMap(options)
+	}
+
+	// backward compatibility: if the first argument is an integer, it is treated as the maximum line length.
+	maxLength, ok := toInt(arguments[0])
+	if !ok {
 		return fmt.Errorf(`invalid argument to the "line-length-limit" rule: expecting an integer or an options map, got %T`, arguments[0])
 	}
+
+	return r.setMax(maxLength)
 }
 
-func (r *LineLengthLimitRule) setMax(value int64) error {
+func (r *LineLengthLimitRule) setMax(value int) error {
 	if value < 0 {
 		return errors.New(`invalid value passed as argument number to the "line-length-limit" rule`)
 	}
 
-	r.max = int(value)
+	r.max = value
 	return nil
 }
 
@@ -57,7 +59,7 @@ func (r *LineLengthLimitRule) configureFromMap(options map[string]any) error {
 	for k, v := range options {
 		switch {
 		case isRuleOption(k, "max"):
-			maxLength, ok := v.(int64)
+			maxLength, ok := toInt(v)
 			if !ok {
 				return fmt.Errorf(`invalid value for the "max" option of the "line-length-limit" rule: expecting an integer, got %T`, v)
 			}

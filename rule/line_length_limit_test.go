@@ -2,6 +2,7 @@ package rule_test
 
 import (
 	"errors"
+	"math"
 	"testing"
 
 	"github.com/mgechev/revive/lint"
@@ -19,8 +20,36 @@ func TestLineLengthLimitRule_Configure(t *testing.T) {
 			arguments: lint.Arguments{},
 		},
 		{
-			name:      "integer argument",
+			name:      "int64 argument, as a TOML configuration yields it",
 			arguments: lint.Arguments{int64(100)},
+		},
+		{
+			name:      "int argument, as a YAML configuration yields it",
+			arguments: lint.Arguments{100},
+		},
+		{
+			name:      "float64 argument, as a JSON configuration yields it",
+			arguments: lint.Arguments{float64(100)},
+		},
+		{
+			name:      "non-integral float argument",
+			arguments: lint.Arguments{100.5},
+			wantErr:   errors.New(`invalid argument to the "line-length-limit" rule: expecting an integer or an options map, got float64`),
+		},
+		{
+			name:      "argument out of the int range",
+			arguments: lint.Arguments{uint64(math.MaxInt) + 1},
+			wantErr:   errors.New(`invalid argument to the "line-length-limit" rule: expecting an integer or an options map, got uint64`),
+		},
+		{
+			name:      "not a number argument",
+			arguments: lint.Arguments{math.NaN()},
+			wantErr:   errors.New(`invalid argument to the "line-length-limit" rule: expecting an integer or an options map, got float64`),
+		},
+		{
+			name:      "infinite argument",
+			arguments: lint.Arguments{math.Inf(1)},
+			wantErr:   errors.New(`invalid argument to the "line-length-limit" rule: expecting an integer or an options map, got float64`),
 		},
 		{
 			name:      "negative integer argument",
@@ -39,6 +68,25 @@ func TestLineLengthLimitRule_Configure(t *testing.T) {
 			arguments: lint.Arguments{map[string]any{
 				"Max": int64(100),
 			}},
+		},
+		{
+			name: "int max option, as a YAML configuration yields it",
+			arguments: lint.Arguments{map[string]any{
+				"max": 100,
+			}},
+		},
+		{
+			name: "float64 max option, as a JSON configuration yields it",
+			arguments: lint.Arguments{map[string]any{
+				"max": float64(100),
+			}},
+		},
+		{
+			name: "non-integral float max option",
+			arguments: lint.Arguments{map[string]any{
+				"max": 100.5,
+			}},
+			wantErr: errors.New(`invalid value for the "max" option of the "line-length-limit" rule: expecting an integer, got float64`),
 		},
 		{
 			name: "map without max keeps default",

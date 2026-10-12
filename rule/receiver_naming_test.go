@@ -42,6 +42,25 @@ func TestReceiverNamingRule_Configure(t *testing.T) {
 			}},
 		},
 		{
+			name: "int maxLength argument, as a YAML configuration yields it",
+			arguments: lint.Arguments{map[string]any{
+				"maxLength": 10,
+			}},
+		},
+		{
+			name: "float64 maxLength argument, as a JSON configuration yields it",
+			arguments: lint.Arguments{map[string]any{
+				"maxLength": float64(10),
+			}},
+		},
+		{
+			name: "non-integral float maxLength argument",
+			arguments: lint.Arguments{map[string]any{
+				"maxLength": 10.5,
+			}},
+			wantErr: errors.New("invalid value 10.5 for argument maxLength of rule receiver-naming, expected integer value got float64"),
+		},
+		{
 			name: "invalid maxLength type",
 			arguments: lint.Arguments{map[string]any{
 				"maxLength": "10",

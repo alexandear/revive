@@ -28,12 +28,12 @@ func (r *CognitiveComplexityRule) Configure(arguments lint.Arguments) error {
 		return nil
 	}
 
-	complexity, ok := arguments[0].(int64)
+	complexity, ok := toInt(arguments[0])
 	if !ok {
-		return fmt.Errorf("invalid argument type for cognitive-complexity, expected int64, got %T", arguments[0])
+		return fmt.Errorf("invalid argument type for cognitive-complexity, expected an integer, got %T", arguments[0])
 	}
 
-	r.maxComplexity = int(complexity)
+	r.maxComplexity = complexity
 	return nil
 }
 

@@ -26,11 +26,11 @@ func (r *ArgumentsLimitRule) Configure(arguments lint.Arguments) error {
 		return nil
 	}
 
-	maxArguments, ok := arguments[0].(int64) // Alt. non panicking version
+	maxArguments, ok := toInt(arguments[0])
 	if !ok {
 		return errors.New(`invalid value passed as argument number to the "argument-limit" rule`)
 	}
-	r.max = int(maxArguments)
+	r.max = maxArguments
 	return nil
 }
 

@@ -10,7 +10,7 @@ import (
 
 // MaxControlNestingRule sets restriction for maximum nesting of control structures.
 type MaxControlNestingRule struct {
-	max int64
+	max int
 }
 
 const defaultMaxControlNesting = 5
@@ -25,7 +25,7 @@ func (r *MaxControlNestingRule) Apply(file *lint.File, _ lint.Arguments) []lint.
 		onFailure: func(failure lint.Failure) {
 			failures = append(failures, failure)
 		},
-		max: int(r.max),
+		max: r.max,
 	}
 
 	ast.Walk(walker, fileAst)
@@ -114,7 +114,7 @@ func (r *MaxControlNestingRule) Configure(arguments lint.Arguments) error {
 		return nil
 	}
 
-	maxNesting, ok := arguments[0].(int64) // Alt. non panicking version
+	maxNesting, ok := toInt(arguments[0])
 	if !ok {
 		return errors.New(`invalid value passed as argument number to the "max-control-nesting" rule`)
 	}

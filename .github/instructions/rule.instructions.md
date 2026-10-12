@@ -41,6 +41,10 @@ are the canonical examples; [`AGENTS.md`](../../AGENTS.md) §4 points here.
 - `Configure` validates arguments and returns an error instead of panicking.
   New options are passed as a single `map[string]any` argument with named keys, not as positional scalars;
   this keeps rule configuration extensible and self-documenting.
+- `Configure` never type-asserts a numeric argument to a concrete Go type (`arguments[0].(int64)`):
+  the type depends on the decoder that produced the configuration (TOML yields `int64`, YAML `int`, JSON `float64`),
+  and an embedding tool may pass any of them. Read numbers with the `toInt` helper in
+  [`rule/utils.go`](../../rule/utils.go), and word the error message after "integer", not after a Go type.
 - Defaults are constants in the rule file (see `defaultArgumentsLimit`) and are applied in `Configure` when arguments are missing.
   Bundle-level defaults live in `defaults.toml` / `revive.toml`.
 - `Configure` resets every configurable field to its default **before** reading the arguments. Rules in `allRules` are singletons and

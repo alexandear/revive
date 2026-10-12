@@ -19,17 +19,30 @@ func TestFunctionResultsLimitRule_Configure(t *testing.T) {
 			arguments: lint.Arguments{},
 		},
 		{
-			name:      "integer argument",
-			arguments: lint.Arguments{int64(2)},
+			name:      "int64 argument, as a TOML configuration yields it",
+			arguments: lint.Arguments{int64(10)},
 		},
 		{
-			name:      "invalid argument type",
-			arguments: lint.Arguments{"invalid"},
-			wantErr:   errors.New(`invalid value passed as return results number to the "function-result-limit" rule; need int64 but got string`),
+			name:      "int argument, as a YAML configuration yields it",
+			arguments: lint.Arguments{10},
+		},
+		{
+			name:      "float64 argument, as a JSON configuration yields it",
+			arguments: lint.Arguments{float64(10)},
+		},
+		{
+			name:      "non-integral float argument",
+			arguments: lint.Arguments{10.5},
+			wantErr:   errors.New(`invalid value passed as return results number to the "function-result-limit" rule; need an integer but got float64`),
+		},
+		{
+			name:      "string argument",
+			arguments: lint.Arguments{"10"},
+			wantErr:   errors.New(`invalid value passed as return results number to the "function-result-limit" rule; need an integer but got string`),
 		},
 		{
 			name:      "negative argument",
-			arguments: lint.Arguments{int64(-1)},
+			arguments: lint.Arguments{-1},
 			wantErr:   errors.New(`the value passed as return results number to the "function-result-limit" rule cannot be negative`),
 		},
 	}

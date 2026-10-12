@@ -76,6 +76,9 @@ var _ lint.ConfigurableRule = (*ArgumentsLimitRule)(nil)
 ```
 
 The `Arguments` type is an alias of the type `[]any`. The arguments of the rule are passed from the configuration file.
+Their Go types depend on the decoder that produced that configuration: revive's own TOML config yields `int64` for every integer,
+while a tool embedding revive may hand over arguments decoded from YAML (`int`) or JSON (`float64`).
+Read numeric arguments with the `toInt` helper in [`rule/utils.go`](/rule/utils.go) rather than asserting a concrete type.
 
 Every `lint.Failure` reported by a rule must set `Category` to one of the `lint.FailureCategory*` constants defined in
 [`lint/failure.go`](/lint/failure.go). Failures without a category are rejected by the test harness.

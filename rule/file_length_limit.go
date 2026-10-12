@@ -97,11 +97,11 @@ func (r *FileLengthLimitRule) Configure(arguments lint.Arguments) error {
 	for k, v := range argKV {
 		switch {
 		case isRuleOption(k, "max"):
-			maxLines, ok := v.(int64)
+			maxLines, ok := toInt(v)
 			if !ok || maxLines < 0 {
-				return fmt.Errorf(`invalid configuration value for max lines in "file-length-limit" rule; need positive int64 but got %T`, v)
+				return fmt.Errorf(`invalid configuration value for max lines in "file-length-limit" rule; need a positive integer but got %T`, v)
 			}
-			r.max = int(maxLines)
+			r.max = maxLines
 		case isRuleOption(k, "skipComments"):
 			skipComments, ok := v.(bool)
 			if !ok {

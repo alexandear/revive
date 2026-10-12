@@ -19,13 +19,26 @@ func TestCognitiveComplexityRule_Configure(t *testing.T) {
 			arguments: lint.Arguments{},
 		},
 		{
-			name:      "integer argument",
-			arguments: lint.Arguments{int64(3)},
+			name:      "int64 argument, as a TOML configuration yields it",
+			arguments: lint.Arguments{int64(10)},
 		},
 		{
-			name:      "invalid argument type",
-			arguments: lint.Arguments{"invalid"},
-			wantErr:   errors.New("invalid argument type for cognitive-complexity, expected int64, got string"),
+			name:      "int argument, as a YAML configuration yields it",
+			arguments: lint.Arguments{10},
+		},
+		{
+			name:      "float64 argument, as a JSON configuration yields it",
+			arguments: lint.Arguments{float64(10)},
+		},
+		{
+			name:      "non-integral float argument",
+			arguments: lint.Arguments{10.5},
+			wantErr:   errors.New("invalid argument type for cognitive-complexity, expected an integer, got float64"),
+		},
+		{
+			name:      "string argument",
+			arguments: lint.Arguments{"10"},
+			wantErr:   errors.New("invalid argument type for cognitive-complexity, expected an integer, got string"),
 		},
 	}
 

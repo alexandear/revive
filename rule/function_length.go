@@ -23,8 +23,8 @@ func (r *FunctionLength) Configure(arguments lint.Arguments) error {
 	if err != nil {
 		return err
 	}
-	r.maxStmt = int(maxStmt)
-	r.maxLines = int(maxLines)
+	r.maxStmt = maxStmt
+	r.maxLines = maxLines
 	return nil
 }
 
@@ -81,7 +81,7 @@ const (
 	defaultFuncLinesLimit = 75
 )
 
-func (*FunctionLength) parseArguments(arguments lint.Arguments) (maxStmt, maxLines int64, err error) {
+func (*FunctionLength) parseArguments(arguments lint.Arguments) (maxStmt, maxLines int, err error) {
 	if len(arguments) == 0 {
 		return defaultFuncStmtsLimit, defaultFuncLinesLimit, nil
 	}
@@ -91,17 +91,17 @@ func (*FunctionLength) parseArguments(arguments lint.Arguments) (maxStmt, maxLin
 		return 0, 0, fmt.Errorf(`invalid configuration for "function-length" rule, expected %d arguments but got %d`, minArguments, len(arguments))
 	}
 
-	maxStmt, maxStmtOk := arguments[0].(int64)
+	maxStmt, maxStmtOk := toInt(arguments[0])
 	if !maxStmtOk {
-		return 0, 0, fmt.Errorf(`invalid configuration value for max statements in "function-length" rule; need int64 but got %T`, arguments[0])
+		return 0, 0, fmt.Errorf(`invalid configuration value for max statements in "function-length" rule; need an integer but got %T`, arguments[0])
 	}
 	if maxStmt < 0 {
 		return 0, 0, fmt.Errorf(`the configuration value for max statements in "function-length" rule cannot be negative, got %d`, maxStmt)
 	}
 
-	maxLines, maxLinesOk := arguments[1].(int64)
+	maxLines, maxLinesOk := toInt(arguments[1])
 	if !maxLinesOk {
-		return 0, 0, fmt.Errorf(`invalid configuration value for max lines in "function-length" rule; need int64 but got %T`, arguments[1])
+		return 0, 0, fmt.Errorf(`invalid configuration value for max lines in "function-length" rule; need an integer but got %T`, arguments[1])
 	}
 	if maxLines < 0 {
 		return 0, 0, fmt.Errorf(`the configuration value for max lines in "function-length" rule cannot be negative, got %d`, maxLines)

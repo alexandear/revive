@@ -19,12 +19,25 @@ func TestArgumentsLimitRule_Configure(t *testing.T) {
 			arguments: lint.Arguments{},
 		},
 		{
-			name:      "integer argument",
-			arguments: lint.Arguments{int64(5)},
+			name:      "int64 argument, as a TOML configuration yields it",
+			arguments: lint.Arguments{int64(10)},
 		},
 		{
-			name:      "invalid argument type",
-			arguments: lint.Arguments{"invalid"},
+			name:      "int argument, as a YAML configuration yields it",
+			arguments: lint.Arguments{10},
+		},
+		{
+			name:      "float64 argument, as a JSON configuration yields it",
+			arguments: lint.Arguments{float64(10)},
+		},
+		{
+			name:      "non-integral float argument",
+			arguments: lint.Arguments{10.5},
+			wantErr:   errors.New(`invalid value passed as argument number to the "argument-limit" rule`),
+		},
+		{
+			name:      "string argument",
+			arguments: lint.Arguments{"10"},
 			wantErr:   errors.New(`invalid value passed as argument number to the "argument-limit" rule`),
 		},
 	}

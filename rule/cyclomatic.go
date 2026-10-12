@@ -28,11 +28,11 @@ func (r *CyclomaticRule) Configure(arguments lint.Arguments) error {
 		return nil
 	}
 
-	complexity, ok := arguments[0].(int64) // Alt. non panicking version
+	complexity, ok := toInt(arguments[0])
 	if !ok {
-		return fmt.Errorf("invalid argument for cyclomatic complexity; expected int but got %T", arguments[0])
+		return fmt.Errorf("invalid argument for cyclomatic complexity; expected an integer but got %T", arguments[0])
 	}
-	r.maxComplexity = int(complexity)
+	r.maxComplexity = complexity
 	return nil
 }
 

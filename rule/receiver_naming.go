@@ -35,11 +35,11 @@ func (r *ReceiverNamingRule) Configure(arguments lint.Arguments) error {
 		if !isRuleOption(k, "maxLength") {
 			return fmt.Errorf("unknown argument %s for %s rule", k, r.Name())
 		}
-		value, ok := v.(int64)
+		value, ok := toInt(v)
 		if !ok {
 			return fmt.Errorf("invalid value %v for argument %s of rule %s, expected integer value got %T", v, k, r.Name(), v)
 		}
-		r.receiverNameMaxLength = int(value)
+		r.receiverNameMaxLength = value
 	}
 	return nil
 }

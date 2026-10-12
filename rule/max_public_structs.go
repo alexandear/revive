@@ -10,7 +10,7 @@ import (
 
 // MaxPublicStructsRule lints the number of public structs in a file.
 type MaxPublicStructsRule struct {
-	max int64
+	max int
 }
 
 const defaultMaxPublicStructs = 5
@@ -26,7 +26,7 @@ func (r *MaxPublicStructsRule) Configure(arguments lint.Arguments) error {
 		return nil
 	}
 
-	maxStructs, ok := arguments[0].(int64) // Alt. non panicking version
+	maxStructs, ok := toInt(arguments[0])
 	if !ok {
 		return errors.New(`invalid value passed as argument number to the "max-public-structs" rule`)
 	}
@@ -71,7 +71,7 @@ func (*MaxPublicStructsRule) Name() string {
 }
 
 type lintMaxPublicStructs struct {
-	current   int64
+	current   int
 	fileAst   *ast.File
 	onFailure func(lint.Failure)
 }

@@ -19,38 +19,56 @@ func TestFunctionLength_Configure(t *testing.T) {
 			arguments: lint.Arguments{},
 		},
 		{
-			name:      "valid arguments",
-			arguments: lint.Arguments{int64(50), int64(100)},
+			name:      "int64 arguments, as a TOML configuration yields them",
+			arguments: lint.Arguments{int64(10), int64(20)},
+		},
+		{
+			name:      "int arguments, as a YAML configuration yields them",
+			arguments: lint.Arguments{10, 20},
+		},
+		{
+			name:      "float64 arguments, as a JSON configuration yields them",
+			arguments: lint.Arguments{float64(10), float64(20)},
+		},
+		{
+			name:      "non-integral float max statements",
+			arguments: lint.Arguments{10.5, 20},
+			wantErr:   errors.New(`invalid configuration value for max statements in "function-length" rule; need an integer but got float64`),
+		},
+		{
+			name:      "non-integral float max lines",
+			arguments: lint.Arguments{10, 20.5},
+			wantErr:   errors.New(`invalid configuration value for max lines in "function-length" rule; need an integer but got float64`),
+		},
+		{
+			name:      "string max statements",
+			arguments: lint.Arguments{"10", 20},
+			wantErr:   errors.New(`invalid configuration value for max statements in "function-length" rule; need an integer but got string`),
+		},
+		{
+			name:      "string max lines",
+			arguments: lint.Arguments{10, "20"},
+			wantErr:   errors.New(`invalid configuration value for max lines in "function-length" rule; need an integer but got string`),
+		},
+		{
+			name:      "negative max statements",
+			arguments: lint.Arguments{-1, 20},
+			wantErr:   errors.New(`the configuration value for max statements in "function-length" rule cannot be negative, got -1`),
+		},
+		{
+			name:      "negative max lines",
+			arguments: lint.Arguments{10, -1},
+			wantErr:   errors.New(`the configuration value for max lines in "function-length" rule cannot be negative, got -1`),
 		},
 		{
 			name:      "too few arguments",
-			arguments: lint.Arguments{int64(50)},
+			arguments: lint.Arguments{10},
 			wantErr:   errors.New(`invalid configuration for "function-length" rule, expected 2 arguments but got 1`),
 		},
 		{
 			name:      "too many arguments",
-			arguments: lint.Arguments{int64(50), int64(100), int64(150)},
+			arguments: lint.Arguments{10, 20, 30},
 			wantErr:   errors.New(`invalid configuration for "function-length" rule, expected 2 arguments but got 3`),
-		},
-		{
-			name:      "invalid max statements type",
-			arguments: lint.Arguments{"invalid", int64(100)},
-			wantErr:   errors.New(`invalid configuration value for max statements in "function-length" rule; need int64 but got string`),
-		},
-		{
-			name:      "negative max statements",
-			arguments: lint.Arguments{int64(-1), int64(100)},
-			wantErr:   errors.New(`the configuration value for max statements in "function-length" rule cannot be negative, got -1`),
-		},
-		{
-			name:      "invalid max lines type",
-			arguments: lint.Arguments{int64(50), "invalid"},
-			wantErr:   errors.New(`invalid configuration value for max lines in "function-length" rule; need int64 but got string`),
-		},
-		{
-			name:      "negative max lines",
-			arguments: lint.Arguments{int64(50), int64(-1)},
-			wantErr:   errors.New(`the configuration value for max lines in "function-length" rule cannot be negative, got -1`),
 		},
 	}
 

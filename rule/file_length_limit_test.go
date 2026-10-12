@@ -43,6 +43,25 @@ func TestFileLengthLimitRule_Configure(t *testing.T) {
 			}},
 		},
 		{
+			name: "int max argument, as a YAML configuration yields it",
+			arguments: lint.Arguments{map[string]any{
+				"max": 100,
+			}},
+		},
+		{
+			name: "float64 max argument, as a JSON configuration yields it",
+			arguments: lint.Arguments{map[string]any{
+				"max": float64(100),
+			}},
+		},
+		{
+			name: "non-integral float max argument",
+			arguments: lint.Arguments{map[string]any{
+				"max": 100.5,
+			}},
+			wantErr: errors.New(`invalid configuration value for max lines in "file-length-limit" rule; need a positive integer but got float64`),
+		},
+		{
 			name:      "invalid argument",
 			arguments: lint.Arguments{123},
 			wantErr:   errors.New(`invalid argument to the "file-length-limit" rule. Expecting a k,v map, got int`),
@@ -52,7 +71,7 @@ func TestFileLengthLimitRule_Configure(t *testing.T) {
 			arguments: lint.Arguments{map[string]any{
 				"max": "invalid",
 			}},
-			wantErr: errors.New(`invalid configuration value for max lines in "file-length-limit" rule; need positive int64 but got string`),
+			wantErr: errors.New(`invalid configuration value for max lines in "file-length-limit" rule; need a positive integer but got string`),
 		},
 		{
 			name: "invalid skipComments type",
