@@ -102,6 +102,7 @@ List of all available rules.
 - [use-any](#use-any)
 - [use-errors-new](#use-errors-new)
 - [use-fmt-print](#use-fmt-print)
+- [use-new](#use-new)
 - [use-slices-concat](#use-slices-concat)
 - [use-slices-sort](#use-slices-sort)
 - [use-waitgroup-go](#use-waitgroup-go)
@@ -2778,6 +2779,64 @@ _Description_: This rule proposes to replace calls to built-in `print` and `prin
 [language bootstrapping and are not guaranteed to stay in the language](https://go.dev/ref/spec#Bootstrapping).
 
 _Configuration_: N/A
+
+## use-new
+
+_Go version_: >= 1.26.
+
+_Revive version_: [v1.18.0](https://github.com/revive-lint/revive/releases/tag/v1.18.0).
+
+_Description_: Since Go 1.26 the `new` built-in function accepts a value: `new(expr)` allocates a variable initialized with `expr`
+and yields its address.
+The rule proposes to replace a variable declared just to take its address, which does the same in a more convoluted way,
+with a call to `new`.
+
+### Examples (use-new)
+
+Before (violation):
+
+```go
+sizeVal := float64(*size)
+snapshot.Size = &sizeVal
+
+count := 42
+return &count
+```
+
+After (fixed):
+
+```go
+snapshot.Size = new(float64(*size))
+
+return new(42)
+```
+
+Not reported, inlining the value would make the code harder to read:
+
+```go
+// the value hides what it holds behind a call
+requeuingCount := ptr.Deref(wl.Status.RequeueState.Count, 0) + 1
+wl.Status.RequeueState.Count = &requeuingCount
+
+// the value would be lost in a long statement
+q := m.formatter.AmountQuantity(resourceName, v)
+metrics.ReportClusterQueueResourcePending(string(cq.name), utilresource.QuantityToFloat(&q), m.roleTracker)
+```
+
+_Configuration_: N/A
+
+_Note_: The rule only reports a variable whose unique use, in the statement that immediately follows its declaration,
+is taking its address. A variable used anywhere else can not be replaced by the value it holds.
+
+_Note_: The rule only proposes `new` for a value that reads well inside the call: a literal, a variable, a field,
+a pointer dereference, or a conversion of one of these to a predeclared type.
+A value holding the result of a function call stays in its variable, where a name tells what it is,
+and so does a composite literal, since `&T{...}` already allocates one.
+
+_Note_: The rule does not report when the resulting statement would exceed 80 characters,
+the default of [line-length-limit](#line-length-limit).
+
+_Note_: This rule is irrelevant for Go 1.25-.
 
 ## use-slices-concat
 
