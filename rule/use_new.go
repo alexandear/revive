@@ -9,10 +9,6 @@ import (
 	"github.com/mgechev/revive/lint"
 )
 
-// maxReplacementLength is the maximum length of the statement the rule proposes, the default of line-length-limit:
-// inlining the value in a longer statement would hurt readability more than the temporary variable does.
-const maxReplacementLength = 80
-
 // UseNewRule spots variables declared just to take their address, that can be replaced by a call to the new builtin.
 type UseNewRule struct{}
 
@@ -78,18 +74,11 @@ func (w lintUseNew) checkPointerToTemporaryVar(stmts []ast.Stmt) {
 			continue
 		}
 
-		// the definition and the address-of must be the only uses of the variable in its scope:
-		// any other use means the variable can not be replaced by the value it holds
 		if countUsesInStmts(stmts, target.Name) != 2 {
 			continue
 		}
 
 		valueStr := astutils.GoFmt(value)
-		// the proposed statement is the one taking the address, with &v replaced by new(value)
-		replacementLength := len(astutils.GoFmt(stmts[i+1])) - len("&"+target.Name) + len("new("+valueStr+")")
-		if replacementLength > maxReplacementLength {
-			continue // the value would be lost in a too long statement
-		}
 
 		w.onFailure(lint.Failure{
 			Category:   lint.FailureCategoryStyle,

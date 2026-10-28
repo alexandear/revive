@@ -2796,8 +2796,8 @@ with a call to `new`.
 Before (violation):
 
 ```go
-sizeVal := float64(*size)
-snapshot.Size = &sizeVal
+timeout := float64(*seconds)
+configTimeout := &timeout
 
 count := 42
 return &count
@@ -2806,35 +2806,12 @@ return &count
 After (fixed):
 
 ```go
-snapshot.Size = new(float64(*size))
+configTimeout := new(float64(*seconds))
 
 return new(42)
 ```
 
-Not reported, inlining the value would make the code harder to read:
-
-```go
-// the value hides what it holds behind a call
-requeuingCount := ptr.Deref(wl.Status.RequeueState.Count, 0) + 1
-wl.Status.RequeueState.Count = &requeuingCount
-
-// the value would be lost in a long statement
-q := m.formatter.AmountQuantity(resourceName, v)
-metrics.ReportClusterQueueResourcePending(string(cq.name), utilresource.QuantityToFloat(&q), m.roleTracker)
-```
-
 _Configuration_: N/A
-
-_Note_: The rule only reports a variable whose unique use, in the statement that immediately follows its declaration,
-is taking its address. A variable used anywhere else can not be replaced by the value it holds.
-
-_Note_: The rule only proposes `new` for a value that reads well inside the call: a literal, a variable, a field,
-a pointer dereference, or a conversion of one of these to a predeclared type.
-A value holding the result of a function call stays in its variable, where a name tells what it is,
-and so does a composite literal, since `&T{...}` already allocates one.
-
-_Note_: The rule does not report when the resulting statement would exceed 80 characters,
-the default of [line-length-limit](#line-length-limit).
 
 _Note_: This rule is irrelevant for Go 1.25-.
 
