@@ -86,6 +86,8 @@ func (w lintUseNew) checkPointerToTemporaryVar(stmts []ast.Stmt) {
 			Confidence: 0.8,
 			Failure:    fmt.Sprintf("replace the temporary variable %s with new(%s)", target.Name, valueStr),
 		})
+
+		i++ // the statement taking the address is rewritten by the failure above, reporting it in turn would contradict it
 	}
 }
 
@@ -102,7 +104,9 @@ func isSimpleValue(value ast.Expr) bool {
 	case *ast.StarExpr:
 		return isSimpleValue(value.X)
 	case *ast.UnaryExpr:
-		return isSimpleValue(value.X)
+		// a channel receive is left out: evaluated in place of the variable, it would block
+		// where the call it moves into is evaluated, after the operands preceding it
+		return value.Op != token.ARROW && isSimpleValue(value.X)
 	case *ast.SelectorExpr:
 		return isSimpleValue(value.X)
 	case *ast.IndexExpr:
@@ -141,6 +145,10 @@ func definedVar(stmt ast.Stmt) (*ast.Ident, ast.Expr) {
 // takesAddressOfVar returns true if the statement takes the address of the variable name and makes no other use of it,
 // for example p = &name, return &name or f(&name).
 func takesAddressOfVar(stmt ast.Stmt, name string) bool {
+	if !isStraightLine(stmt) {
+		return false
+	}
+
 	if countUses(stmt, name) != 1 {
 		return false // the statement does not use the variable, or uses it more than once
 	}
@@ -163,14 +171,66 @@ func takesAddressOfVar(stmt ast.Stmt, name string) bool {
 	return len(addressOf) == 1
 }
 
-// countUses returns the number of occurrences of the identifier name in the AST subtree rooted at n.
+// isStraightLine returns true if the statement runs exactly once, where it is written.
+// The address taken in the body of a loop or of a conditional statement is not reported:
+// the body runs many times or not at all, when evaluating the value in place of the variable
+// would allocate one value per run, or would not evaluate it at all.
+func isStraightLine(stmt ast.Stmt) bool {
+	switch stmt.(type) {
+	case *ast.AssignStmt, *ast.DeclStmt, *ast.DeferStmt, *ast.ExprStmt, *ast.GoStmt, *ast.ReturnStmt, *ast.SendStmt:
+		return true
+	default:
+		return false
+	}
+}
+
+// countUses returns the number of occurrences of the variable name in the AST subtree rooted at n.
+// A field name is not an occurrence of a variable: neither status.count nor statusType{count: 1} uses the variable count.
 func countUses(n ast.Node, name string) int {
-	uses := astutils.PickNodes(n, func(n ast.Node) bool {
-		ident, ok := n.(*ast.Ident)
-		return ok && ident.Name == name
+	count := 0
+
+	ast.Inspect(n, func(n ast.Node) bool {
+		switch n := n.(type) {
+		case *ast.Ident:
+			if n.Name == name {
+				count++
+			}
+		case *ast.SelectorExpr:
+			count += countUses(n.X, name) // n.Sel names a field or a method
+			return false
+		case *ast.CompositeLit:
+			count += countUsesInCompositeLit(n, name)
+			return false
+		}
+
+		return true
 	})
 
-	return len(uses)
+	return count
+}
+
+// countUsesInCompositeLit returns the number of occurrences of the variable name in the given composite literal.
+// Only a map literal has keys that are values: elsewhere a key names a field or indexes an array, and holds no variable.
+func countUsesInCompositeLit(lit *ast.CompositeLit, name string) int {
+	count := 0
+	if lit.Type != nil {
+		count += countUses(lit.Type, name)
+	}
+
+	_, keysAreValues := lit.Type.(*ast.MapType)
+	for _, element := range lit.Elts {
+		keyValue, ok := element.(*ast.KeyValueExpr)
+		switch {
+		case !ok:
+			count += countUses(element, name)
+		case keysAreValues:
+			count += countUses(keyValue.Key, name) + countUses(keyValue.Value, name)
+		default:
+			count += countUses(keyValue.Value, name)
+		}
+	}
+
+	return count
 }
 
 // countUsesInStmts returns the number of occurrences of the identifier name in the given statements.

@@ -54,6 +54,28 @@ func inClauses(ch chan int, i int) {
 	}
 }
 
+func sameNameAsField(i int) {
+	size := float64(i) // MATCH /replace the temporary variable size with new(float64(i))/
+	snapshot.Size = &size
+	other.size = 2
+	consumeSnapshot(&snapshotType{size: 3})
+}
+
+func chainedPointers() **int {
+	count := 42 // MATCH /replace the temporary variable count with new(42)/
+	countPtr := &count
+
+	return &countPtr
+}
+
+func sendAndDefer(ch chan *int64, i int) {
+	sent := int64(i) // MATCH /replace the temporary variable sent with new(int64(i))/
+	ch <- &sent
+
+	deferred := int64(i) // MATCH /replace the temporary variable deferred with new(int64(i))/
+	defer consume(&deferred)
+}
+
 // Not reported: the variable has another use, or is not declared right before its address is taken.
 
 func otherUses(flag bool, i int) {
@@ -77,6 +99,40 @@ func otherUses(flag bool, i int) {
 
 	inFuncLit := !flag
 	run(func() { consume(&inFuncLit) })
+
+	mapKey := float64(i)
+	snapshot.Size = &mapKey
+	_ = map[float64]int{mapKey: 1}
+}
+
+// Not reported: the address is taken in a body that can run many times, or not at all.
+
+func inBody(values []float64, i int, n int, flag bool) {
+	count := 0
+	for range n {
+		int64s = append(int64s, &count)
+	}
+
+	item := values[i]
+	if flag {
+		snapshot.Size = &item
+	}
+
+	inSwitch := float64(n)
+	switch {
+	case flag:
+		snapshot.Size = &inSwitch
+	}
+}
+
+// Not reported: evaluating the value where the address is taken would run it out of order.
+
+func blockingValue(ch chan int64) {
+	fromChannel := <-ch
+	int64s = append(int64s, &fromChannel)
+
+	alsoFromChannel := <-ch
+	consume(&alsoFromChannel)
 }
 
 // Not reported: inlining the value would make the code harder to read.
