@@ -10,16 +10,12 @@ import (
 	"github.com/mgechev/revive/lint"
 )
 
-// UseNewRule spots variables declared just to take their address, that can be replaced by a call to the new builtin.
+// UseNewRule spots variables declared just to take their address that can be replaced by a call to the new builtin.
 type UseNewRule struct{}
 
 // Apply applies the rule to given file.
 func (*UseNewRule) Apply(file *lint.File, _ lint.Arguments) []lint.Failure {
 	if !file.Pkg.IsAtLeastGoVersion(lint.Go126) {
-		return nil // new accepts a value to point to only since Go 1.26
-	}
-
-	if hidesNewBuiltin(file) {
 		return nil
 	}
 
@@ -39,80 +35,6 @@ func (*UseNewRule) Apply(file *lint.File, _ lint.Arguments) []lint.Failure {
 // Name returns the rule name.
 func (*UseNewRule) Name() string {
 	return "use-new"
-}
-
-// hidesNewBuiltin returns true if a declaration of new hides the built-in function where the file could be rewritten:
-// a declaration anywhere in the file, or a package level declaration in another file of the package.
-// A call to new would then call that declaration instead of allocating, so nothing is reported.
-func hidesNewBuiltin(file *lint.File) bool {
-	if declaresNew(file.AST) {
-		return true
-	}
-
-	for name, other := range file.Pkg.Files() {
-		if name != file.Name && declaresNewAtPackageLevel(other.AST) {
-			return true
-		}
-	}
-
-	return false
-}
-
-// declaresNew returns true if the AST subtree rooted at n declares the name new.
-func declaresNew(n ast.Node) bool {
-	declaresIt := false
-
-	ast.Inspect(n, func(n ast.Node) bool {
-		declaresIt = declaresIt || declaresNewName(n)
-
-		return !declaresIt
-	})
-
-	return declaresIt
-}
-
-// declaresNewAtPackageLevel returns true if the file declares the name new as a function, a variable, a constant or a type.
-func declaresNewAtPackageLevel(file *ast.File) bool {
-	for _, decl := range file.Decls {
-		switch decl := decl.(type) {
-		case *ast.FuncDecl:
-			if declaresNewName(decl) {
-				return true
-			}
-		case *ast.GenDecl:
-			if slices.ContainsFunc(decl.Specs, func(spec ast.Spec) bool { return declaresNewName(spec) }) {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-// declaresNewName returns true if the node itself declares the name new,
-// as a variable, a function, a type, a parameter, a result or an import alias.
-func declaresNewName(n ast.Node) bool {
-	isNewVar := func(expr ast.Expr) bool { return astutils.IsIdent(expr, "new") }
-	isNewIdent := func(ident *ast.Ident) bool { return ident != nil && ident.Name == "new" }
-
-	switch n := n.(type) {
-	case *ast.AssignStmt:
-		return n.Tok == token.DEFINE && slices.ContainsFunc(n.Lhs, isNewVar)
-	case *ast.Field: // a parameter, a result or a receiver
-		return slices.ContainsFunc(n.Names, isNewIdent)
-	case *ast.FuncDecl:
-		return isNewIdent(n.Name)
-	case *ast.ImportSpec:
-		return isNewIdent(n.Name)
-	case *ast.RangeStmt:
-		return n.Tok == token.DEFINE && (isNewVar(n.Key) || isNewVar(n.Value))
-	case *ast.TypeSpec:
-		return isNewIdent(n.Name)
-	case *ast.ValueSpec:
-		return slices.ContainsFunc(n.Names, isNewIdent)
-	default:
-		return false
-	}
 }
 
 type lintUseNew struct {
@@ -174,7 +96,7 @@ func (w lintUseNew) checkPointerToTemporaryVar(stmts []ast.Stmt) {
 	}
 }
 
-// isSimpleValue returns true if the value reads well inside a call to new, for example 42, *size, st.count or float64(*size).
+// isSimpleValue returns true if the value reads well inside a call to new, e.g., 42, *size, st.countor float64(*size).
 func isSimpleValue(value ast.Expr) bool {
 	switch value := value.(type) {
 	case *ast.BasicLit, *ast.Ident:
@@ -190,7 +112,7 @@ func isSimpleValue(value ast.Expr) bool {
 	case *ast.IndexExpr:
 		return isSimpleValue(value.X) && isSimpleValue(value.Index)
 	case *ast.CallExpr:
-		// a conversion to a predeclared type, e.g. float64(*size).
+		// a conversion to a predeclared type, e.g., float64(*size).
 		if len(value.Args) != 1 || value.Ellipsis.IsValid() {
 			return false
 		}
@@ -203,7 +125,8 @@ func isSimpleValue(value ast.Expr) bool {
 	}
 }
 
-// definedVar returns the variable and the value of a v := expr statement. It returns nil if the statement is not of that form.
+// definedVar returns the variable and the value of a v := expr statement.
+// It returns nil if the statement is not of that form.
 func definedVar(stmt ast.Stmt) (*ast.Ident, ast.Expr) {
 	assign, ok := stmt.(*ast.AssignStmt)
 	if !ok || assign.Tok != token.DEFINE || len(assign.Lhs) != 1 || len(assign.Rhs) != 1 {
@@ -219,7 +142,7 @@ func definedVar(stmt ast.Stmt) (*ast.Ident, ast.Expr) {
 }
 
 // takesAddressOfVar returns true if the statement takes the address of the variable name and makes no other use of it,
-// for example p = &name, return &name or f(&name).
+// e.g., p = &name, return &name or f(&name).
 func takesAddressOfVar(stmt ast.Stmt, name string) bool {
 	if !isStraightLine(stmt) {
 		return false
@@ -284,7 +207,7 @@ func countUses(n ast.Node, name string) int {
 				count++
 			}
 		case *ast.SelectorExpr:
-			count += countUses(n.X, name) // n.Sel names a field or a method
+			count += countUses(n.X, name)
 			return false
 		case *ast.CompositeLit:
 			count += countUsesInCompositeLit(n, name)
