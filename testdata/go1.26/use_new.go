@@ -78,7 +78,7 @@ func sendAndDefer(ch chan *int64, i int) {
 
 // Not reported: the variable has another use, or is not declared right before its address is taken.
 
-func otherUses(flag bool, i int) {
+func otherUses(flag bool, i int, sizes [3]float64) {
 	usedTwice := float64(i)
 	snapshot.Size = &usedTwice
 	_ = usedTwice
@@ -103,6 +103,14 @@ func otherUses(flag bool, i int) {
 	mapKey := float64(i)
 	snapshot.Size = &mapKey
 	_ = map[float64]int{mapKey: 1}
+
+	nestedMapKey := float64(i)
+	snapshot.Size = &nestedMapKey
+	_ = map[string]map[float64]int{"a": {nestedMapKey: 1}}
+
+	arrayKey := sizes
+	snapshot.Size = &arrayKey
+	_ = [...]int{len(arrayKey): 1}
 }
 
 // Not reported: the address is taken in a body that can run many times, or not at all.
@@ -133,6 +141,20 @@ func blockingValue(ch chan int64) {
 
 	alsoFromChannel := <-ch
 	consume(&alsoFromChannel)
+}
+
+func besideAnotherOperation(ch chan int64, values []float64, i int) {
+	beforeIndex := values[i]
+	sizes[nextIndex()] = &beforeIndex
+
+	beforeArgument := float64(i)
+	consumeTwo(lookupSize("a name"), &beforeArgument)
+
+	beforeReceive := float64(i)
+	consumeTwo(<-ch, &beforeReceive)
+
+	beforeCallee := float64(i)
+	newBuilder("a name").consumeSize(&beforeCallee)
 }
 
 // Not reported: inlining the value would make the code harder to read.
